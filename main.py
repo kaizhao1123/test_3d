@@ -1,16 +1,177 @@
 
-
 from CalculateVolume import CalculateVolume
+import xlrd
+from xlwt import Workbook
+from xlutils.copy import copy
 
-vintValue = 175
-pixPerMMAtZ = 95/3.95
-imageLength = 200
+def ReadFromResult(loc):
+    result = xlrd.open_workbook(loc)
+    sheet1 = result.sheet_by_index(0)
+    rowCount = sheet1.nrows
+    wb = copy(result)
+    return rowCount, wb
+
+def CreateNewResult():
+    result = Workbook()
+    sheet1 = result.add_sheet('Sheet 1')
+    sheet1.write(0, 0, 'ID')
+    sheet1.write(0, 1, 'Length')
+    sheet1.write(0, 2, 'Width')
+    sheet1.write(0, 3, 'Height')
+    sheet1.write(0, 4, 'Volume')
+    sheet1.write(0, 5, 'Type')
+
+loc = "./result.xls"
+rowCount, wb = ReadFromResult(loc)
+sheet1 = wb.get_sheet(0)
+print(rowCount)
+print("&&&&&&&&&&&&&&")
+path = 'pic/'
+vintValue = 100
+pixPerMMAtZ = 95/3.945  # 145/5.74 # 94.5/3.945 #157/6.78 #94 /3.94
 imageWidth = 200
+imageHeight = 200
 
-CalculateVolume(vintValue, pixPerMMAtZ, imageLength, imageWidth)
+CalculateVolume(path, vintValue, pixPerMMAtZ, imageWidth, imageHeight, sheet1, rowCount)
+wb.save('result.xls')
 
 
+
+
+
+# #########################################################
+
+
+# import cv2
+# import numpy as np
+# import math
 #
+#
+#
+#
+# imgname = 'pic/' + ("%04d" % 1) + '.bmp'
+#
+# img = cv2.imread(imgname)  # input image
+# #img = img[0:480, 0:720]
+#
+# gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)  # change to gray image
+# # Global threshold segmentation,  to binary image. (Otsu)
+# res, dst = cv2.threshold(gray, 0, 255, cv2.THRESH_OTSU)  # 0,255 cv2.THRESH_OTSU
+# element = cv2.getStructuringElement(cv2.MORPH_CROSS, (3, 3))  # Morphological denoising
+# dst = cv2.morphologyEx(dst, cv2.MORPH_OPEN, element)  # Open operation denoising
+#
+# contours, hierarchy = cv2.findContours(dst, cv2.RETR_TREE,    #external
+#                                        cv2.CHAIN_APPROX_SIMPLE)  # Contour detection function
+# # cv2.drawContours(dst, contours, -1, (0, 0, 255), 3)  # Draw contour
+#
+#
+# maxCont = 0
+# for cont in contours:
+#     area = cv2.contourArea(cont)  # Calculate the area of the enclosing shape
+#     if area < 500:  # keep the largest one, which is the target.
+#         continue
+#     maxCont = cont
+# maxRect = cv2.boundingRect(maxCont)
+# X = maxRect[0]
+# Y = maxRect[1]
+# width = maxRect[2]
+# height = maxRect[3]
+#
+# cv2.drawContours(img, maxCont, -1, (0, 255, 255), 1)  # Draw contour
+#
+# hull = cv2.convexHull(maxCont, returnPoints=False)
+# #cv2.drawContours(img, [hull], -1, (255, 0, 0), 1)
+# #print(hull)
+# convexityDefects = cv2.convexityDefects(maxCont, hull)
+# #print(convexityDefects)
+#
+# mostFarthestIndex = 0
+# mostDistance = 0
+# finalStartIndex = 0
+# finalEndIndex = 0
+#
+# for d in range(convexityDefects.shape[0]):
+#     start, end, farthest, distance = convexityDefects[d][0]
+#    # start_pt = tuple(maxCont[start][0])
+#     #end_pt = tuple(maxCont[end][0])
+#     if distance > mostDistance:
+#         mostDistance = distance
+#         finalStartIndex = start
+#         finalEndIndex = end
+#         mostFarthestIndex = farthest
+# mostFarthest_pt = tuple(maxCont[mostFarthestIndex][0])
+# finalStart_pt = tuple(maxCont[finalStartIndex][0])
+# finalEnd_pt = tuple(maxCont[finalEndIndex][0])
+#
+# cv2.circle(img, mostFarthest_pt, 3, [255, 0, 0], -1)
+# cv2.circle(img, finalStart_pt, 3, [255, 0, 0], -1)
+# cv2.circle(img, finalEnd_pt, 3, [255, 0, 0], -1)
+#
+# startPoint = maxCont[finalStartIndex]
+# endPoint = maxCont[finalEndIndex]
+# centerPoint = maxCont[mostFarthestIndex]
+#
+# # print(finalStartIndex)
+# # print(finalEndIndex)
+# # print(mostDistance)
+# # print(mostFarthestIndex)
+#
+# print(maxCont[finalStartIndex])
+# print(maxCont[finalEndIndex])
+# print(maxCont[mostFarthestIndex])
+#
+# disFromStartPoint = math.sqrt((startPoint[0][0] - centerPoint[0][0]) * (startPoint[0][0] - centerPoint[0][0]) +
+#                               (startPoint[0][1] - centerPoint[0][1]) * (startPoint[0][1] - centerPoint[0][1]))
+#
+# disFromEndPoint = math.sqrt((endPoint[0][0] - centerPoint[0][0]) * (endPoint[0][0] - centerPoint[0][0]) +
+#                             (endPoint[0][1] - centerPoint[0][1]) * (endPoint[0][1] - centerPoint[0][1]))
+#
+# # if disFromStartPoint < disFromEndPoint:
+# #     weight = disFromStartPoint
+# # else:
+# #     weight = disFromEndPoint
+#
+# sidePoint = 0
+# sideDistance = 0
+# if disFromStartPoint < disFromEndPoint:
+#     sidePoint = startPoint
+#     sideDistance = disFromStartPoint
+# else:
+#     sidePoint = endPoint
+#     sideDistance = disFromEndPoint
+# weight = math.fabs(centerPoint[0][1] - sidePoint[0][1])
+# angel = math.atan(math.fabs(sidePoint[0][0] - centerPoint[0][0]) / math.fabs(sidePoint[0][1] - centerPoint[0][1])) * 180 / math.pi
+#
+# print("***")
+# print(weight)
+# print(weight / sideDistance)
+# print(angel)
+#
+#
+# cv2.namedWindow("original", 1)
+# cv2.imshow('original', img)
+# cv2.namedWindow("dst", 1)
+# cv2.imshow("dst", dst)
+# #cv2.namedWindow("contour", 1)
+# #cv2.imshow('contour', img2)
+# cv2.waitKey()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# #################################################3
 # import cv2 as cv
 # cap = cv.VideoCapture(1)  #, cv.CAP_DSHOW
 # if not cap.isOpened():
@@ -32,6 +193,26 @@ CalculateVolume(vintValue, pixPerMMAtZ, imageLength, imageWidth)
 # # When everything done, release the capture
 # cap.release()
 # cv.destroyAllWindows()
+# #####################################################
+
+#
+# import cv2
+#
+#
+# imgNum = 1
+# while imgNum < 37:
+#     imgname = 'pictures/chendi-image/' + ("%04d" % imgNum) + '.bmp'
+#     img = cv2.imread(imgname)  # input image
+#     img = img[0:410, 0:719]
+#     cv2.imwrite("./pictures/00{:02d}.bmp".format(imgNum), img)
+#     imgNum += 1
+
+
+
+
+
+
+
 
 
 # print("****** Cropping ******")

@@ -6,6 +6,7 @@ import subprocess;
 from sys import platform;
 
 
+
 def CarveIt(V_in, P, mask, VolWidth, VolHeight, VolDepth):
     # Write output exchange file
     out = open('carveInput.dat', 'wb');
@@ -50,7 +51,7 @@ def CarveIt(V_in, P, mask, VolWidth, VolHeight, VolDepth):
     return V_in.reshape((sY, sX, sZ), order='F');
 
 
-def TurntableCarve(fn, cam, V, imageLength, imageWidth):
+def TurntableCarve(fn, cam, V, imageWidth, imageHeight):
     # Reconstruct volume of an object from its projection masks acquired using
     # a turntable setup
     #
@@ -66,13 +67,6 @@ def TurntableCarve(fn, cam, V, imageLength, imageWidth):
     # volume_in_mm3 = TurntableCarve(fnmask,cam,tool,V);
     ###################################################################
 
-    # tool in image
-    # tool.tipX = tool.TurntableCenter[0];  # x-position of tool tip in roi [unit: pixel]
-    # tool.height = tool.TurntableCenter[1] - tool.tipY;  # height of the tool [unit: pixel]
-
-    # init volume V as cuboid
-    # V.ImageOfOrigin = tool.TurntableCenter - [0, V.VerticalOffset];  # Center of the reconstruction cuboid
-
     V.dx = V.VolWidth / V.sX;  # voxelsize in X-direction
     V.dy = V.VolHeight / V.sY;  # voxelsize in Y-direction
     V.dz = V.VolDepth / V.sZ;  # voxelsize in Z-direction
@@ -84,8 +78,6 @@ def TurntableCarve(fn, cam, V, imageLength, imageWidth):
 
     # loop images for carving
     NumImgs = len(fn.number);  # number of images
-    # NumImgs = 1
-
     for i in range(NumImgs):
         # print a point to show progress
         print('.')
@@ -94,10 +86,10 @@ def TurntableCarve(fn, cam, V, imageLength, imageWidth):
         mask = ReadImage(fn, i)
 
         # calculate projection matrix for this image
-        P = ProjectionMatrix(cam, i, imageLength, imageWidth)
+        P = ProjectionMatrix(cam, i, imageWidth, imageHeight)
 
         # draw the volume outline as box in mask image
-        # projectVolBox(P,mask,V,10); # uncomment to see the projected volume boxes
+        #projectVolBox(P,mask,V,10); # uncomment to see the projected volume boxes
 
         # do the carving with a c implementation
         V.vol = CarveIt(V.vol, P, mask, V.VolWidth, V.VolHeight, V.VolDepth)
@@ -124,6 +116,8 @@ def ReadImage(fn, idx):
 
 
 ##########################################################
+
+
 # show the reconstructed volume as isosurface
 def showvolume(Vin, currentfigurenum):
     mlab.figure(currentfigurenum, bgcolor=(1, 1, 1), fgcolor=(1, 1, 1));
@@ -138,6 +132,11 @@ def showvolume(Vin, currentfigurenum):
     c_scene.scene.camera.position = [0, 0, -128];
     c_scene.scene.camera.view_up = [-1, 0, 0];
     c_scene.scene.render();
+    #mlab.savefig('3d.png', size = (300, 300))
+
+
+
+
     mlab.show();
     return p;
 
@@ -218,17 +217,13 @@ def projectVolBox(P, mask, V, currentfigurenum):
 ##########################################################
 # calculate projection matrix P from given camera and image
 # information
-def ProjectionMatrix(cam, i, imageLength, imageWidth):
+def ProjectionMatrix(cam, i, imageWidth, imageHeight):
     # pricipal point in image
-    # camH = cam.offset[:, i]
-    # p = cam.orig_image_size / 2 - cam.crop_rect[0:2] - camH; # + 0.5 + 1
-    p = [imageLength / 2, imageWidth / 2]
+    p = [imageWidth / 2, imageHeight / 2]
 
     # Z = f*(M/m), FocalLength is f/m, m in [mm/pix], 1/M is PixPerMMAtZ
     f = cam.FocalLengthInMM * cam.PixPerMMSensor;
     Z = f / cam.PixPerMMAtZ;  # distance of rotation axis, i.e. origin of world coords.
-    # X = -(V.ImageOfOrigin[0] - p[0]) / cam.PixPerMMAtZ;
-    # Y = -(V.ImageOfOrigin[1] - p[1]) / cam.PixPerMMAtZ;
     X = 0
     Y = 0
 
