@@ -1,16 +1,22 @@
+#################################
+# this file only used for slicing method, to remove the concave part of the wheat seed.
+# not necessary for 3d method.
+#################################
+
 import cv2
 import math
 
 # assume the concave part is a part of new ellipsoid.
-def findConcave(imgNum):
+def findConcave(path, vintValue, imgNum):
     # imgname = 'pic/' + ("%04d" % imgNum) + '.bmp'
-    imgname = './pic/ROI_0{:02d}0.png'.format(imgNum - 1)
+    imgname = path + 'ROI_0{:02d}0.png'.format(imgNum - 1)
     # imgname = './pic/Mask_0{:02d}0.png'.format(imgNum - 1)
     img = cv2.imread(imgname)  # input image
+    img = img[0:339, 0:720]
 
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)  # change to gray image
     # Global threshold segmentation,  to binary image. (Otsu)
-    res, dst = cv2.threshold(gray, 0, 255, cv2.THRESH_OTSU)  # 0,255 cv2.THRESH_OTSU
+    res, dst = cv2.threshold(gray, vintValue, 255, 0)  # 0,255 cv2.THRESH_OTSU
     element = cv2.getStructuringElement(cv2.MORPH_CROSS, (3, 3))  # Morphological denoising
     dst = cv2.morphologyEx(dst, cv2.MORPH_OPEN, element)  # Open operation denoising
 
@@ -76,8 +82,11 @@ def findConcave(imgNum):
 
     # assume the width (radius of the new ellipsoid) is vertical distance.
     width = math.fabs(centerPoint[0][1] - sidePoint[0][1])
-    angel = math.atan(
-        math.fabs(sidePoint[0][0] - centerPoint[0][0]) / math.fabs(sidePoint[0][1] - centerPoint[0][1])) * 180 / math.pi
+    if sidePoint[0][1] - centerPoint[0][1] != 0:
+        angel = math.atan(
+            math.fabs(sidePoint[0][0] - centerPoint[0][0]) / math.fabs(sidePoint[0][1] - centerPoint[0][1])) * 180 / math.pi
+    else:
+        angel = 0
     angel *= 2
 
     print("***")

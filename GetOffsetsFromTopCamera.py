@@ -1,3 +1,8 @@
+#######################
+# this file used for combining the top view camera and side view camera.
+# not necessary for 3d method.
+#######################
+
 import cv2
 
 

@@ -9,7 +9,7 @@ from sys import platform;
 
 def CarveIt(V_in, P, mask, VolWidth, VolHeight, VolDepth):
     # Write output exchange file
-    out = open('carveInput.dat', 'wb');
+    out = open('carveInput.dat', 'wb')
 
     sY = V_in.shape[0];
     sX = V_in.shape[1];
@@ -51,7 +51,7 @@ def CarveIt(V_in, P, mask, VolWidth, VolHeight, VolDepth):
     return V_in.reshape((sY, sX, sZ), order='F');
 
 
-def TurntableCarve(fn, cam, V, imageWidth, imageHeight):
+def TurntableCarve(fn, cam, V, imageWidth, imageHeight, auto):
     # Reconstruct volume of an object from its projection masks acquired using
     # a turntable setup
     #
@@ -100,7 +100,7 @@ def TurntableCarve(fn, cam, V, imageWidth, imageHeight):
     print('\n')
 
     # show the reconstructed object
-    rotatevolume(V, 11)
+    rotatevolume(V, 1, auto)
 
     # calculate the final volume of the object
     vol_in_mm3 = np.sum(V.vol) * V.dx * V.dy * V.dz
@@ -119,7 +119,7 @@ def ReadImage(fn, idx):
 
 
 # show the reconstructed volume as isosurface
-def showvolume(Vin, currentfigurenum):
+def showvolume(Vin, currentfigurenum, auto):
     mlab.figure(currentfigurenum, bgcolor=(1, 1, 1), fgcolor=(1, 1, 1));
     mlab.clf();
 
@@ -134,17 +134,15 @@ def showvolume(Vin, currentfigurenum):
     c_scene.scene.render();
     #mlab.savefig('3d.png', size = (300, 300))
 
-
-
-
-    mlab.show();
-    return p;
+    if not auto:
+        mlab.show()
+    return p
 
 
 ##########################################################
 # show the reconstructed volume as rotating isosurface
-def rotatevolume(Vin, currentfigurenum):
-    p = showvolume(Vin, currentfigurenum);
+def rotatevolume(Vin, currentfigurenum, auto):
+    p = showvolume(Vin, currentfigurenum, auto)
 
     # auto rotation skipped for python version
     # rotate manually if needed
