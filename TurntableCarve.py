@@ -1,10 +1,9 @@
 import numpy as np;
-from scipy.misc import imread;
+from PIL import Image
 import mayavi.mlab as mlab;
 import matplotlib.pyplot as plt;
 import subprocess;
 from sys import platform;
-
 
 
 def CarveIt(V_in, P, mask, VolWidth, VolHeight, VolDepth):
@@ -31,7 +30,7 @@ def CarveIt(V_in, P, mask, VolWidth, VolHeight, VolDepth):
 
     data = np.array([smX, smY], dtype='uint32');
     out.write(data.tobytes());
-    out.write(mask.tobytes('F'));
+    out.write(mask.tobytes('F')); # F
 
     data = np.array([width, height, depth], dtype='float64');
     out.write(data.tobytes());
@@ -95,23 +94,42 @@ def TurntableCarve(fn, cam, V, imageWidth, imageHeight, auto):
         V.vol = CarveIt(V.vol, P, mask, V.VolWidth, V.VolHeight, V.VolDepth)
         # alternatively do the carving in Python -- very slow!
         # V.vol = Carve(V.vol,P,mask,V.VolWidth,V.VolHeight,V.VolDepth)
-
+    # print("****")
+    # print(type(V.vol))
+    # print(V.vol)
+    # print("****")
     # print end of line
     print('\n')
 
     # show the reconstructed object
     rotatevolume(V, 1, auto)
+    # show3dModel(V)
 
     # calculate the final volume of the object
     vol_in_mm3 = np.sum(V.vol) * V.dx * V.dy * V.dz
-    return vol_in_mm3
+    return vol_in_mm3, V.vol
+
+
+def show3dModel(vin):
+
+    # using plt
+    volume = vin.vol
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    volume = np.array(volume)
+    z, x, y = volume.nonzero()
+    ax.scatter(x, y, z)
+    plt.show()
+
 
 
 ##########################################################
-# read an image or mask from file
+# get an imageArray
 def ReadImage(fn, idx):
     imgfilename = fn.base + ("%04d" % fn.number[idx]) + fn.extension
-    img = imread(imgfilename)
+    # img = imread(imgfilename)
+    img = Image.open(imgfilename)   # get the image
+    img = np.array(img.getdata()).reshape(img.size[0], img.size[1])  # convert to array
     return img
 
 
@@ -139,7 +157,7 @@ def showvolume(Vin, currentfigurenum, auto):
     return p
 
 
-##########################################################
+#########################################################
 # show the reconstructed volume as rotating isosurface
 def rotatevolume(Vin, currentfigurenum, auto):
     p = showvolume(Vin, currentfigurenum, auto)

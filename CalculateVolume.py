@@ -2,10 +2,15 @@
 import subprocess
 import os.path
 from sys import platform
+
+import cv2
+import numpy as np
+
 from HSVSegmentSeq import HSVSegmentSeq
 from TurntableCarve import TurntableCarve
 from CropWithAjustment import CropWithAdjustment
 from CropWithAjustment import getExpectedValues
+from CropWithAjustment import PreAdjustment
 import math
 
 # only compile c programm on linux, binary for win32 included.
@@ -27,12 +32,11 @@ class Object(object):
 def CalculateVolume(path, vintValue, pixPerMMAtZ, imageWidth, imageHeight, sheet, rowCount, auto):
     print("****** Cropping ******")
 
-    # ############ new method with adjusting offsets ##################
-
+    # ############ deal with images ##################
+    PreAdjustment(path, vintValue)
     allWidthData, allHeightData = getExpectedValues(path, vintValue, "original")
     CropWithAdjustment(path, vintValue, imageWidth, imageHeight, allWidthData)
 
-    #
     allWidthData.sort()
     result_Length = allWidthData[35]
     result_Width = allWidthData[0]
@@ -59,9 +63,11 @@ def CalculateVolume(path, vintValue, pixPerMMAtZ, imageWidth, imageHeight, sheet
     Hint = [0, 255]
     Sint = [0, 255]
     Vint = [vintValue, 255]
+    # Vint = [30, 255]
 
     # segment seed using its HSV color value
     HSVSegmentSeq(fnroi, fnmask, Hint, Sint, Vint)
+
     ##################################################################
 
     # #######remove the concave part from the result of the slicing method.
@@ -107,7 +113,24 @@ def CalculateVolume(path, vintValue, pixPerMMAtZ, imageWidth, imageHeight, sheet
     V.sZ = 100  # number of voxels in Z-direction 100
     #
     # perform volume carving on mask images
-    volume_in_mm3 = TurntableCarve(fnmask, cam, V, imageWidth, imageHeight, auto)
+    volume_in_mm3, vVol = TurntableCarve(fnmask, cam, V, imageWidth, imageHeight, auto)
+
+    pointCLoud = []
+    data = vVol
+    for x in range(len(data)):
+        for y in range(len(data[x])):
+            for z in range(len(data[x][y])):
+                # shell
+                if isEdgePoint(data, x, y, z):
+                    subData = [x, y, z, 37, 150, 190]
+                    subData = np.array(subData)
+                    pointCLoud.append(subData)
+                # solid
+                # if data[x][y][z] == 1:
+                #     subData = [x, y, z]
+                #     subData = np.array(subData)
+                #     pointCLoud.append(subData)
+    np.savetxt("sample.txt", pointCLoud)
     ##################################################################
 
     ##################################################################
@@ -119,10 +142,11 @@ def CalculateVolume(path, vintValue, pixPerMMAtZ, imageWidth, imageHeight, sheet
     # print('Volume = ' + ("%0.2f" % volume_in_mm3) + 'mm^3\n')
 
     #
+    pixPerMMAtX = pixPerMMAtZ + 0.5
 
     result_Length = result_Length / pixPerMMAtZ
-    result_Width = result_Width / pixPerMMAtZ
-    result_Height = result_Height / pixPerMMAtZ
+    result_Width = result_Width / pixPerMMAtX
+    result_Height = result_Height / pixPerMMAtX
 
     # concaveWidth = concaveWidth / pixPerMMAtZ  ##
     # concaveVol = math.pi * result_Length * concaveWidth * concaveWidth / 6  ##
@@ -152,3 +176,12 @@ def CalculateVolume(path, vintValue, pixPerMMAtZ, imageWidth, imageHeight, sheet
     sheet.write(rowCount, 4, volume_in_mm3)
     # sheet.write(rowCount, 5, concaveVol)      ##
     ##################################################################
+    return pointCLoud
+
+
+def isEdgePoint(data, x, y, z):
+    if data[x][y][z] == 1:
+        if (data[x - 1][y][z] == 0 or data[x + 1][y][z] == 0
+                or data[x][y - 1][z] == 0 or data[x][y + 1][z] == 0
+                or data[x][y][z - 1] == 0 or data[x][y][z + 1] == 0):
+            return True
