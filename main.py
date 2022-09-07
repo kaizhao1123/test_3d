@@ -46,8 +46,6 @@ if not os.path.isfile(loc):
     CreateNewResult()
 rowCount, wb = ReadFromResult(loc)
 sheet1 = wb.get_sheet(0)
-# print(rowCount)
-# print("&&&&&&&&&&&&&&")
 
 # the main parameters we need to setup
 vintValue = 60  # 85  # the value of light
@@ -59,8 +57,10 @@ imageHeight = 200
 path = 'pic/'
 points = CalculateVolume(path, vintValue, pixPerMMAtZ, imageWidth, imageHeight, sheet1, rowCount, False)
 
+# the mayavi 3d model END #######################
 
-# ###### Point Cloud ######
+
+# ###### Point Cloud ###### !!!!
 # ##################################################
 import numpy as np
 import open3d as o3d
@@ -74,20 +74,15 @@ pcd.points = o3d.utility.Vector3dVector(point_cloud[:, :3])
 pcd.colors = o3d.utility.Vector3dVector(point_cloud[:, 3:6] / 255)
 pcd.estimate_normals()
 
-# o3d.io.write_point_cloud("./sync.ply", pcd)
-
 # make  all normals point outwards
 countOfNeighbors = 10
 pcd.orient_normals_consistent_tangent_plane(countOfNeighbors)
 
-# print(np.asarray(pcd_load.normals)[:10, :])
 # o3d.visualization.draw_geometries([pcd])  # , point_show_normal = True)
-# o3d.io.write_point_cloud("./new.ply", pcd)
-
 
 # ########################################################################################
 # ******************************************
-#  Alpha shape  *****  works ********
+#  Alpha shape  *****  it works ********
 # //
 
 # alpha = 3
@@ -97,7 +92,7 @@ pcd.orient_normals_consistent_tangent_plane(countOfNeighbors)
 
 # //
 # ******************************************
-# #########################################################################################
+# ######## Alpha shape END ###############################################################
 
 
 # ########################################################################################
@@ -119,7 +114,7 @@ pcd.orient_normals_consistent_tangent_plane(countOfNeighbors)
 
 # //
 # ******************************************
-# ###########################################################################################
+# ########## ball pivoting END  ##########################################################
 
 
 # ########################################################################################
@@ -138,6 +133,7 @@ pcd.orient_normals_consistent_tangent_plane(countOfNeighbors)
 # print(mesh)
 # o3d.visualization.draw_geometries([mesh])
 
+
 # 2. mesh method **** works well ****
 
 print('run Poisson surface reconstruction')
@@ -151,7 +147,7 @@ with o3d.utility.VerbosityContextManager(
 
 # //
 # ******************************************
-# ###########################################################################################
+# ############### Poisson surface reconstruction END ########################################
 
 
 # smooth the surface of the model (mesh filter)
@@ -160,11 +156,11 @@ mesh_out = mesh.filter_smooth_simple(number_of_iterations=5)
 mesh_out.compute_vertex_normals()  # add normal of the triangle, otherwise, is not 3D.
 o3d.visualization.draw_geometries([mesh_out])
 print(mesh_out)
-#o3d.io.write_triangle_mesh("./res.stl", mesh_out)         # save to stl file
+o3d.io.write_triangle_mesh("./res.stl", mesh_out)         # save to stl file
 
 # //
 # ******************************************
-# ###########################################################################################
+# ################# Smooth END ##################################################
 
 
 # ##########        test camera          #############

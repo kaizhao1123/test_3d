@@ -184,7 +184,6 @@ def PreAdjustment(path, vintValue):
         print(imgNum)
         imgName = path + ("%04d" % imgNum) + '.bmp'
         img = cv2.imread(imgName)
-        #img = img[:, 280:440]
 
         image = cv2.GaussianBlur(img, (3, 3), 0)
         edges = cv2.Canny(image, 0, 30)     #  using low vint value
@@ -200,12 +199,10 @@ def PreAdjustment(path, vintValue):
 
         # combine the edges image and original image
         new_image = cv2.add(edges, img)
-
         cv2.imwrite(path + ("%04d" % imgNum) + '.bmp', new_image)
 
+        # draw the black circle edge around the target.
         # X, Y, width, height = GetArea(path, vintValue, imgNum, "original")
-        #
-        # # draw the black circle edge
         # center = (round(X + width / 2), round(Y + height / 2))
         # color = (0, 0, 0)
         # thickness = 5
@@ -214,10 +211,6 @@ def PreAdjustment(path, vintValue):
         # cv2.imwrite(path + ("%04d" % imgNum) + '.bmp', new_image)
 
         imgNum += 1
-
-
-        # cv2.imshow('dd', edges)
-        # cv2.waitKey(0)
 
 
 def isValid(list, gap):
@@ -284,7 +277,7 @@ def modifyEdges(edges, gap):
     return gap - minValue
 
 
-#  add light
+#  add light to the image. (not use currently)
 def preAdjustImages(path, imageNum, vintValue):
 
     imgname = path + ("%04d" % imageNum) + '.bmp'
