@@ -35,12 +35,13 @@ def HSVSegmentSeq(fnin, fnout, Hint, Sint, Vint):
         WriteImage(mask, fnout, i)
 
         # improve mask image
-        dealWithMaskImage(i, Vint)
+        # dealWithMaskImage(i, Vint)
 
     # print end of line
     print('\n')
 
 
+# if there are black spots on the surface of the seed.
 def dealWithMaskImage(imgNum, vint):
     img = cv2.imread('pic/Mask_0{:02d}0.png'.format(imgNum))
     vintValue = vint[0]

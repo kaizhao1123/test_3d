@@ -8,9 +8,9 @@ import numpy as np
 
 from HSVSegmentSeq import HSVSegmentSeq
 from TurntableCarve import TurntableCarve
-from CropWithAjustment import CropWithAdjustment
+from CropWithAjustment import CropWithAdjustment, PreAdjustment_LED, getExpectedValues_LED, CropWithAdjustment_LED
 from CropWithAjustment import getExpectedValues
-from CropWithAjustment import PreAdjustment
+from CropWithAjustment import PreAdjustment_blue
 import math
 
 # only compile c programm on linux, binary for win32 included.
@@ -29,22 +29,34 @@ class Object(object):
 
 
 # #################################################################
-def CalculateVolume(path, vintValue, pixPerMMAtZ, imageWidth, imageHeight, sheet, rowCount, auto):
+def CalculateVolume(path, vintValue, pixPerMMAtZ, imageWidth, imageHeight, sheet, rowCount, auto, cub_mm, cub_vox):
     print("****** Cropping ******")
 
     # ############ deal with images ##################
-    PreAdjustment(path, vintValue)
+    # PreAdjustment(path, vintValue)
+    # allWidthData, allHeightData = PreAdjustment_LED(path, vintValue, imageHeight, imageWidth)
+    # Convert2Mask(path)
     allWidthData, allHeightData = getExpectedValues(path, vintValue, "original")
     CropWithAdjustment(path, vintValue, imageWidth, imageHeight, allWidthData)
 
+    # allWidthData, allHeightData = getExpectedValues_LED(path, vintValue)
+    # CropWithAdjustment_LED(path, vintValue, imageWidth, imageHeight, allWidthData)
+
+    # contourRatioList.sort()
     allWidthData.sort()
     result_Length = allWidthData[35]
     result_Width = allWidthData[0]
     result_Height = sum(allHeightData) / 36
+    # ave_contourRatio = sum(contourRatioList) / 36
+    ave_width = sum(allWidthData) / 36
 
     print("length: " + str(result_Length))
     print("width: " + str(result_Width))
+    print("ave width: " + str(ave_width))
     print("height: " + str(result_Height))
+    # print("contourRatio: " + str(ave_contourRatio))
+    # print("the smallest contourRatio: " + str(contourRatioList[0]))
+    # print("the largest contourRatio: " + str(contourRatioList[35]))
 
     ##################################################################
     fnroi = Object()
@@ -66,7 +78,9 @@ def CalculateVolume(path, vintValue, pixPerMMAtZ, imageWidth, imageHeight, sheet
     # Vint = [30, 255]
 
     # segment seed using its HSV color value
+    # convert2Mask(path, vintValue)
     HSVSegmentSeq(fnroi, fnmask, Hint, Sint, Vint)
+    # convert2Mask(path, vintValue)
 
     ##################################################################
 
@@ -105,16 +119,18 @@ def CalculateVolume(path, vintValue, pixPerMMAtZ, imageWidth, imageHeight, sheet
     V = Object()
     V.VerticalOffset = 0  # Vertical offset of center of reconstruction cuboid (i.e the volume) in roi [unit: pixel]
     V.VerticalOffset_t = 10
-    V.VolWidth = 10.0  # width of the volume in mm (X-direction) 10.0
-    V.VolHeight = 10.0  # height of the volume in mm (Y-direction) 10.0
-    V.VolDepth = 10.0  # depth of the volume in mm (Z-direction) 10.0
-    V.sX = 100  # number of voxels in X-direction 100
-    V.sY = 100  # number of voxels in Y-direction 100
-    V.sZ = 100  # number of voxels in Z-direction 100
+    V.VolWidth = cub_mm  # width of the volume in mm (X-direction) 10.0
+    V.VolHeight = cub_mm  # height of the volume in mm (Y-direction) 10.0
+    V.VolDepth = cub_mm  # depth of the volume in mm (Z-direction) 10.0
+    V.sX = cub_vox  # number of voxels in X-direction 100
+    V.sY = cub_vox  # number of voxels in Y-direction 100
+    V.sZ = cub_vox  # number of voxels in Z-direction 100
     #
     # perform volume carving on mask images
     volume_in_mm3, vVol = TurntableCarve(fnmask, cam, V, imageWidth, imageHeight, auto)
 
+    solid = []
+    count = 0
     pointCLoud = []
     data = vVol
     for x in range(len(data)):
@@ -126,11 +142,15 @@ def CalculateVolume(path, vintValue, pixPerMMAtZ, imageWidth, imageHeight, sheet
                     subData = np.array(subData)
                     pointCLoud.append(subData)
                 # solid
-                # if data[x][y][z] == 1:
-                #     subData = [x, y, z]
+                if data[x][y][z] == 1:
+                    solid.append(data[x][y][z])
+                    count += 1
                 #     subData = np.array(subData)
                 #     pointCLoud.append(subData)
     np.savetxt("sample.txt", pointCLoud)
+    # print(len(pointCLoud))
+    # print(len(solid))
+    # print(count)
     ##################################################################
 
     ##################################################################
@@ -142,7 +162,7 @@ def CalculateVolume(path, vintValue, pixPerMMAtZ, imageWidth, imageHeight, sheet
     # print('Volume = ' + ("%0.2f" % volume_in_mm3) + 'mm^3\n')
 
     #
-    pixPerMMAtX = pixPerMMAtZ + 0.5
+    pixPerMMAtX = pixPerMMAtZ   # + 0.5     # adjust for test
 
     result_Length = result_Length / pixPerMMAtZ
     result_Width = result_Width / pixPerMMAtX
@@ -152,9 +172,9 @@ def CalculateVolume(path, vintValue, pixPerMMAtZ, imageWidth, imageHeight, sheet
     # concaveVol = math.pi * result_Length * concaveWidth * concaveWidth / 6  ##
     # concaveVol = concaveVol * concaveAngel / 360  ##
 
-    VolumeFormula = math.pi * result_Length * result_Width * result_Height / 6
+    # VolumeFormula = math.pi * result_Length * result_Width * result_Height / 6
     # volError_1 = (VolumeFormula - volume_in_mm3) / VolumeFormula
-    print('VolumeOfContour = ' + ("%0.3f" % VolumeFormula) + 'mm^3\n')
+    # print('VolumeOfContour(formula) = ' + ("%0.3f" % VolumeFormula) + 'mm^3\n')
 
     # VolumeFormula = VolumeFormula - concaveVol  ##
     # volError = (VolumeFormula - volume_in_mm3) / VolumeFormula ##

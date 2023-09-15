@@ -1,3 +1,4 @@
+import cv2
 import numpy as np;
 from PIL import Image
 import mayavi.mlab as mlab;
@@ -88,7 +89,7 @@ def TurntableCarve(fn, cam, V, imageWidth, imageHeight, auto):
         P = ProjectionMatrix(cam, i, imageWidth, imageHeight)
 
         # draw the volume outline as box in mask image
-        #projectVolBox(P,mask,V,10); # uncomment to see the projected volume boxes
+        # projectVolBox(P,mask,V,10); # uncomment to see the projected volume boxes
 
         # do the carving with a c implementation
         V.vol = CarveIt(V.vol, P, mask, V.VolWidth, V.VolHeight, V.VolDepth)
@@ -122,17 +123,13 @@ def show3dModel(vin):
     plt.show()
 
 
-
 ##########################################################
 # get an imageArray
 def ReadImage(fn, idx):
     imgfilename = fn.base + ("%04d" % fn.number[idx]) + fn.extension
-    # img = imread(imgfilename)
     img = Image.open(imgfilename)   # get the image
     img = np.array(img.getdata()).reshape(img.size[0], img.size[1])  # convert to array
     return img
-
-
 ##########################################################
 
 
@@ -237,8 +234,9 @@ def ProjectionMatrix(cam, i, imageWidth, imageHeight):
     # pricipal point in image
     p = [imageWidth / 2, imageHeight / 2]
 
-    # Z = f*(M/m), FocalLength is f/m, m in [mm/pix], 1/M is PixPerMMAtZ
-    f = cam.FocalLengthInMM * cam.PixPerMMSensor;
+    # Z = f*(M/m). f is the focal length, M is the real size(mm) of the object in the real world, m is pixel size of
+    # the object in the image.
+    f = cam.FocalLengthInMM * cam.PixPerMMSensor;   # convert to pixel
     Z = f / cam.PixPerMMAtZ;  # distance of rotation axis, i.e. origin of world coords.
     X = 0
     Y = 0
@@ -251,6 +249,8 @@ def ProjectionMatrix(cam, i, imageWidth, imageHeight):
 
     tT = np.matrix(t).transpose();
     P = K * np.matrix(np.concatenate((R, -tT), axis=1));
+    # print(i)
+    # print(P)
     return P
 
 
